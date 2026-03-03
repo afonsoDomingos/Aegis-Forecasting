@@ -11,7 +11,7 @@ import historyRaw from './data/historyData.json';
 import './index.css';
 
 const App = () => {
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(historyRaw);
   const [selectedModel, setSelectedModel] = useState('arima');
   const [forecast, setForecast] = useState([]);
   const [horizon, setHorizon] = useState(30);
@@ -58,6 +58,8 @@ const App = () => {
 
   // Run Forecast
   const runForecast = () => {
+    if (!history || history.length === 0) return;
+
     setIsLoading(true);
     // Simulate processing delay
     setTimeout(() => {
@@ -124,13 +126,13 @@ const App = () => {
         <div className="stats-grid">
           <div className="glass-panel stat-card">
             <span className="stat-label">Custo Médio Operacional</span>
-            <div className="stat-value">{history.length > 0 ? (history.reduce((a, b) => a + b.value, 0) / history.length).toFixed(1) : '0.0'} MT</div>
+            <div className="stat-value">{history.length > 0 ? (history.reduce((a, b) => a + b.value, 0) / history.length).toFixed(1) : '--'} MT</div>
             <div className="stat-trend trend-up"><TrendingUp size={14} /> +4.2% (Mercado Local)</div>
           </div>
           <div className="glass-panel stat-card">
             <span className="stat-label">Confiança do Sistema</span>
             <div className="stat-value">{metrics.MAPE ? (100 - parseFloat(metrics.MAPE)).toFixed(1) : '94.2'}%</div>
-            <div className="stat-trend" style={{ color: 'var(--text-secondary)' }}>Meta: >90%</div>
+            <div className="stat-trend" style={{ color: 'var(--text-secondary)' }}>Meta: &gt; 90%</div>
           </div>
           <div className="glass-panel stat-card">
             <span className="stat-label">Erro MAE / RMSE</span>
@@ -224,7 +226,9 @@ const App = () => {
                   activeDot={{ r: 6 }}
                   data={forecast}
                 />
-                <ReferenceLine x={history[history.length - 1].date} stroke="var(--text-secondary)" strokeDasharray="3 3" label={{ value: 'Início da Previsão', position: 'top', fill: 'var(--text-secondary)', fontSize: 10 }} />
+                {history.length > 0 && (
+                  <ReferenceLine x={history[history.length - 1].date} stroke="var(--text-secondary)" strokeDasharray="3 3" label={{ value: 'Início da Previsão', position: 'top', fill: 'var(--text-secondary)', fontSize: 10 }} />
+                )}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
