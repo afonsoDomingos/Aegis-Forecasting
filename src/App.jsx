@@ -11,13 +11,41 @@ import historyRaw from './data/historyData.json';
 import './index.css';
 
 const App = () => {
-  const [history, setHistory] = useState(historyRaw);
+  const [history, setHistory] = useState([]);
   const [selectedModel, setSelectedModel] = useState('arima');
   const [forecast, setForecast] = useState([]);
   const [horizon, setHorizon] = useState(30);
   const [metrics, setMetrics] = useState({});
   const [simParams, setSimParams] = useState({ weather: 0, events: 0 });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch data from MongoDB via API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/history');
+        const data = await response.json();
+        if (data.length > 0) {
+          setHistory(data);
+        } else {
+          // Fallback to local data if DB is empty
+          setHistory(historyRaw);
+          // Seed the database if it's empty
+          await fetch('http://localhost:5000/api/seed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(historyRaw)
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do MongoDB:", error);
+        setHistory(historyRaw);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Models List
   const models = [
@@ -57,8 +85,8 @@ const App = () => {
         <div className="glass-panel" style={{ padding: '10px', background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255,255,255,0.2)' }}>
           <p style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{data.date}</p>
           <p style={{ fontSize: '1.2rem', color: data.isForecast ? 'var(--primary)' : 'var(--secondary)' }}>
-            {data.isForecast ? 'Previsão: ' : 'Real: '}
-            <span style={{ fontWeight: 700 }}>{data.value.toFixed(1)}</span>
+            {data.isForecast ? 'Previsão: ' : 'Consumo: '}
+            <span style={{ fontWeight: 700 }}>{data.value.toFixed(1)} MT</span>
           </p>
           {data.isForecast && (
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -78,8 +106,8 @@ const App = () => {
         {/* Header */}
         <header className="header">
           <div className="title-group">
-            <h1>Sistema de Previsão Aegis</h1>
-            <p>Plataforma de inteligência para otimização de recursos e planejamento</p>
+            <h1>Aegis Moçambique - Previsão</h1>
+            <p>Inteligência de mercado para o crescimento da indústria moçambicana</p>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button className="btn glass-panel" style={{ color: 'var(--text-secondary)' }}>
@@ -94,9 +122,9 @@ const App = () => {
         {/* Stats Grid */}
         <div className="stats-grid">
           <div className="glass-panel stat-card">
-            <span className="stat-label">Demanda Média Atual</span>
-            <div className="stat-value">{(history.reduce((a, b) => a + b.value, 0) / history.length).toFixed(1)}</div>
-            <div className="stat-trend trend-up"><TrendingUp size={14} /> +4.2% Crescimento</div>
+            <span className="stat-label">Custo Médio Operacional</span>
+            <div className="stat-value">{history.length > 0 ? (history.reduce((a, b) => a + b.value, 0) / history.length).toFixed(1) : '0.0'} MT</div>
+            <div className="stat-trend trend-up"><TrendingUp size={14} /> +4.2% (Mercado Local)</div>
           </div>
           <div className="glass-panel stat-card">
             <span className="stat-label">Confiança do Sistema</span>
@@ -111,9 +139,9 @@ const App = () => {
             </div>
           </div>
           <div className="glass-panel stat-card">
-            <span className="stat-label">Próximo Pico Esperado</span>
-            <div className="stat-value">14 Fev</div>
-            <div className="stat-trend" style={{ color: 'var(--warning)' }}><AlertCircle size={14} /> Impacto de Evento</div>
+            <span className="stat-label">Pico de Demanda (Sazonal)</span>
+            <div className="stat-value">25 Set</div>
+            <div className="stat-trend" style={{ color: 'var(--warning)' }}><AlertCircle size={14} /> Dia da Revolução</div>
           </div>
         </div>
 
@@ -306,13 +334,13 @@ const App = () => {
           </div>
 
           <div style={{ marginTop: '2.5rem', padding: '1.5rem', background: 'rgba(139, 92, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(139,92,246,0.2)' }}>
-            <h4 style={{ color: 'var(--primary)', marginBottom: '0.5rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Recomendação Estratégica</h4>
+            <h4 style={{ color: 'var(--primary)', marginBottom: '0.5rem', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Recomendação para Moçambique</h4>
             <p style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
               {simParams.events > 2 ?
-                "⚠️ Alta probabilidade de picos de demanda devido a eventos agendados. Recomenda-se aumentar o stock em 15% e otimizar turnos de pessoal." :
+                "⚠️ Alerta: Período festivo ou feriados nacionais detetados. Risco de rutura em Maputo e Beira. Aumentar stock local em 20%." :
                 simParams.weather > 5 ?
-                  "☀️ Onda de calor detetada na simulação. Antecipe um aumento de 20% no consumo de recursos. Verifique sistemas de refrigeração." :
-                  "✅ Operações atuais alinhadas com a previsão de 30 dias. Manter ciclo padrão de aquisição sem risco imediato de rutura."
+                  "☀️ Alerta de Calor Extremo (INAM): Impacto direto no consumo de energia e conservação de frescos. Reforce os sistemas de backup." :
+                  "✅ Estabilidade detetada. Mercado operando dentro da normalidade para o contexto de Moçambique."
               }
             </p>
           </div>
