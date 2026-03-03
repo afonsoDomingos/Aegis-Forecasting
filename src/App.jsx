@@ -21,9 +21,10 @@ const App = () => {
 
   // Fetch data from MongoDB via API
   useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/history');
+        const response = await fetch(`${apiUrl}/api/history`);
         const data = await response.json();
         if (data.length > 0) {
           setHistory(data);
@@ -31,7 +32,7 @@ const App = () => {
           // Fallback to local data if DB is empty
           setHistory(historyRaw);
           // Seed the database if it's empty
-          await fetch('http://localhost:5000/api/seed', {
+          await fetch(`${apiUrl}/api/seed`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(historyRaw)
